@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Airports Without Parking Reservations</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+        }
+        .title {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .map-container {
+            flex: 1;
+            margin-top: 50px;
+            height: calc(100vh - 50px);
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        .airport-table {
+            width: 300px;
+            height: calc(100vh - 50px);
+            overflow-y: auto;
+            padding: 20px;
+            margin-top: 50px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #ddd;
+        }
+        .airport-table h2 {
+            margin-top: 0;
+            font-family: Arial, sans-serif;
+        }
+        .airport-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .airport-item {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .airport-item:hover {
+            background-color: #e9ecef;
+        }
+        .main-content {
+            display: flex;
+            width: 100%;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">Airports Without Parking Reservations</h1>
+    <div class="main-content">
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+        <div class="airport-table">
+            <h2>Airport List</h2>
+            <ul class="airport-list" id="airportList"></ul>
+        </div>
+    </div>
+    <script>
+        // Create the map centered on the US
+        var map = L.map('map', {
+            center: [39.8283, -98.5795],
+            zoom: 4,
+            maxZoom: 18,
+            minZoom: 2
+        });
+        
+        // Add the OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Add markers for airports
+        var airports = [
+            {name: "Daniel K. Inouye International Airport (HNL)", lat: 21.3187, lng: -157.9224},
+            {name: "Albuquerque International Sunport (ABQ)", lat: 35.0402, lng: -106.6091},
+            {name: "Spokane International Airport (GEG)", lat: 47.6199, lng: -117.5338},
+            {name: "Boise Airport (BOI)", lat: 43.5644, lng: -116.2228},
+            {name: "Fresno Yosemite International Airport (FAT)", lat: 36.7762, lng: -119.7181},
+            {name: "Wilmington International Airport (ILM)", lat: 34.2706, lng: -77.9026},
+            {name: "Asheville Regional Airport (AVL)", lat: 35.4362, lng: -82.5418},
+            {name: "Springfield-Branson National Airport (SGF)", lat: 37.2457, lng: -93.3886},
+            {name: "Baton Rouge Metropolitan Airport (BTR)", lat: 30.5332, lng: -91.1496},
+            {name: "Westchester County Airport (HPN)", lat: 41.0670, lng: -73.7076},
+            {name: "Long Beach Airport (LGB)", lat: 33.8177, lng: -118.1516},
+            {name: "Colorado Springs Airport (COS)", lat: 38.8058, lng: -104.7008},
+            {name: "El Paso International Airport (ELP)", lat: 31.8073, lng: -106.3776},
+            {name: "Billings Logan International Airport (BIL)", lat: 45.8077, lng: -108.5429},
+            {name: "Fargo Hector International Airport (FAR)", lat: 46.9207, lng: -96.8158},
+            {name: "Sioux Falls Regional Airport (FSD)", lat: 43.5820, lng: -96.7419},
+            {name: "Manchester-Boston Regional Airport (MHT)", lat: 42.9326, lng: -71.4357},
+            {name: "Lafayette Regional Airport (LFT)", lat: 30.2053, lng: -91.9876},
+            {name: "Tallahassee International Airport (TLH)", lat: 30.3965, lng: -84.3503},
+            {name: "Traverse City Cherry Capital Airport (TVC)", lat: 44.7414, lng: -85.5822},
+            {name: "Lincoln Airport (LNK)", lat: 40.8510, lng: -96.7592},
+            {name: "Fort Wayne International Airport (FWA)", lat: 40.9785, lng: -85.1951},
+            {name: "Mobile Regional Airport (MOB)", lat: 30.6912, lng: -88.2428},
+            {name: "Shreveport Regional Airport (SHV)", lat: 32.4466, lng: -93.8256},
+            {name: "Missoula International Airport (MSO)", lat: 46.9163, lng: -114.0905},
+            {name: "Eugene Airport (EUG)", lat: 44.1246, lng: -123.2120},
+            {name: "Charlottesville-Albemarle Airport (CHO)", lat: 38.1386, lng: -78.4529},
+            {name: "Monterey Regional Airport (MRY)", lat: 36.5870, lng: -121.8429},
+            {name: "Santa Barbara Municipal Airport (SBA)", lat: 34.4262, lng: -119.8404},
+            {name: "Daytona Beach International Airport (DAB)", lat: 29.1799, lng: -81.0581},
+            {name: "Gulfport-Biloxi International Airport (GPT)", lat: 30.4073, lng: -89.0701},
+            {name: "Appleton International Airport (ATW)", lat: 44.2575, lng: -88.5191},
+            {name: "Jackson-Medgar Wiley Evers International Airport (JAN)", lat: 32.3112, lng: -90.0759},
+            {name: "Valparaiso Destin-Fort Walton Beach Airport (VPS)", lat: 30.4832, lng: -86.5254},
+            {name: "Kalispell Glacier Park International Airport (FCA)", lat: 48.3105, lng: -114.2560},
+            {name: "Palm Springs International Airport (PSP)", lat: 33.8292, lng: -116.5067},
+            {name: "Bozeman Yellowstone International Airport (BZN)", lat: 45.7776, lng: -111.1602},
+            {name: "Little Rock Bill and Hillary Clinton National Airport (LIT)", lat: 34.7294, lng: -92.2243},
+            {name: "Peoria International Airport (PIA)", lat: 40.6642, lng: -89.6933},
+            {name: "Toledo Express Airport (TOL)", lat: 41.5868, lng: -83.8078},
+            {name: "Columbia Regional Airport (COU)", lat: 38.8181, lng: -92.2196},
+            {name: "Wichita Dwight D. Eisenhower National Airport (ICT)", lat: 37.6499, lng: -97.4331},
+            {name: "Augusta Regional Airport (AGS)", lat: 33.3699, lng: -81.9645},
+            {name: "Panama City Northwest Florida Beaches International Airport (ECP)", lat: 30.3573, lng: -85.7958},
+            {name: "Flint Bishop International Airport (FNT)", lat: 42.9654, lng: -83.7436},
+            {name: "Rapid City Regional Airport (RAP)", lat: 44.0453, lng: -103.0574},
+            {name: "Lansing Capital Region International Airport (LAN)", lat: 42.7787, lng: -84.5874},
+            {name: "Melbourne Orlando International Airport (MLB)", lat: 28.1028, lng: -80.6453},
+            {name: "St. George Regional Airport (SGU)", lat: 37.0902, lng: -113.5931},
+            {name: "Brunswick Golden Isles Airport (BQK)", lat: 31.2588, lng: -81.4665},
+            {name: "Key West International Airport (EYW)", lat: 24.5561, lng: -81.7596},
+            {name: "Santa Fe Regional Airport (SAF)", lat: 35.6171, lng: -106.0894},
+            {name: "Yuma International Airport (YUM)", lat: 32.6566, lng: -114.6060},
+            {name: "Grand Junction Regional Airport (GJT)", lat: 39.1224, lng: -108.5267},
+            {name: "McAllen Miller International Airport (MFE)", lat: 26.1758, lng: -98.2386},
+            {name: "Brownsville/South Padre Island International Airport (BRO)", lat: 25.9068, lng: -97.4259},
+            {name: "Monroe Regional Airport (MLU)", lat: 32.5109, lng: -92.0377},
+            {name: "Laredo International Airport (LRD)", lat: 27.5437, lng: -99.4615},
+            {name: "Amarillo Rick Husband International Airport (AMA)", lat: 35.2194, lng: -101.7059},
+            {name: "Corpus Christi International Airport (CRP)", lat: 27.7704, lng: -97.5012},
+            {name: "Tyler Pounds Regional Airport (TYR)", lat: 32.3541, lng: -95.4024},
+            {name: "San Angelo Regional Airport (SJT)", lat: 31.3577, lng: -100.4963},
+            {name: "Lubbock Preston Smith International Airport (LBB)", lat: 33.6636, lng: -101.8228},
+            {name: "Midland International Air and Space Port (MAF)", lat: 31.9425, lng: -102.2019},
+            {name: "Abilene Regional Airport (ABI)", lat: 32.4113, lng: -99.6819},
+            {name: "Del Rio International Airport (DRT)", lat: 29.3742, lng: -100.9272},
+            {name: "Texarkana Regional Airport (TXK)", lat: 33.4537, lng: -93.9910},
+            {name: "East Texas Regional Airport (GGG)", lat: 32.3840, lng: -94.7115},
+            {name: "Waco Regional Airport (ACT)", lat: 31.6113, lng: -97.2305},
+            {name: "Killeen-Fort Hood Regional Airport (GRK)", lat: 31.0672, lng: -97.8289},
+            {name: "Lawton-Fort Sill Regional Airport (LAW)", lat: 34.5677, lng: -98.4166},
+            {name: "Stillwater Regional Airport (SWO)", lat: 36.1612, lng: -97.0857},
+            {name: "Chattanooga Metropolitan Airport (CHA)", lat: 35.0353, lng: -85.2038},
+            {name: "Tri-Cities Airport (TRI)", lat: 36.4752, lng: -82.4074},
+            {name: "Fayetteville Regional Airport (FAY)", lat: 34.9912, lng: -78.8803},
+            {name: "Newport News/Williamsburg International Airport (PHF)", lat: 37.1319, lng: -76.4930},
+            {name: "Roanoke-Blacksburg Regional Airport (ROA)", lat: 37.3255, lng: -79.9754},
+            {name: "Hattiesburg-Laurel Regional Airport (PIB)", lat: 31.4671, lng: -89.3371},
+            {name: "Meridian Regional Airport (MEI)", lat: 32.3326, lng: -88.7519},
+            {name: "Dothan Regional Airport (DHN)", lat: 31.3213, lng: -85.4496},
+            {name: "Montgomery Regional Airport (MGM)", lat: 32.3006, lng: -86.3939},
+            {name: "Valdosta Regional Airport (VLD)", lat: 30.7825, lng: -83.2767},
+            {name: "Columbus Metropolitan Airport (CSG)", lat: 32.5163, lng: -84.9389},
+            {name: "Gainesville Regional Airport (GNV)", lat: 29.6901, lng: -82.2718},
+            {name: "St. Petersburg-Clearwater International Airport (PIE)", lat: 27.9102, lng: -82.6874},
+            {name: "Springfield Abraham Lincoln Capital Airport (SPI)", lat: 39.8441, lng: -89.6779},
+            {name: "Central Illinois Regional Airport (BMI)", lat: 40.4771, lng: -88.9159},
+            {name: "Evansville Regional Airport (EVV)", lat: 38.0365, lng: -87.5324},
+            {name: "South Bend International Airport (SBN)", lat: 41.7087, lng: -86.3173},
+            {name: "Huntington Tri-State Airport (HTS)", lat: 38.3667, lng: -82.5580},
+            {name: "Erie International Airport (ERI)", lat: 42.0820, lng: -80.1762},
+            {name: "Wilkes-Barre/Scranton International Airport (AVP)", lat: 41.3385, lng: -75.7234},
+            {name: "Allentown Lehigh Valley International Airport (ABE)", lat: 40.6524, lng: -75.4404},
+            {name: "Bangor International Airport (BGR)", lat: 44.8074, lng: -68.8281},
+            {name: "Burlington International Airport (BTV)", lat: 44.4719, lng: -73.1533},
+            {name: "Minot International Airport (MOT)", lat: 48.2594, lng: -101.2803},
+            {name: "Bismarck Municipal Airport (BIS)", lat: 46.7727, lng: -100.7460},
+            {name: "Grand Forks International Airport (GFK)", lat: 47.9493, lng: -97.1761},
+            {name: "Medford Rogue Valley International Airport (MFR)", lat: 42.3742, lng: -122.8735},
+            {name: "Paso Robles Municipal Airport (PRB)", lat: 35.6729, lng: -120.6270},
+            {name: "Arcata-Eureka Airport (ACV)", lat: 40.9781, lng: -124.1086},
+            {name: "Redding Municipal Airport (RDD)", lat: 40.5090, lng: -122.2934},
+            {name: "Idaho Falls Regional Airport (IDA)", lat: 43.5146, lng: -112.0702},
+            {name: "Pocatello Regional Airport (PIH)", lat: 42.9098, lng: -112.5959},
+            {name: "Twin Falls Magic Valley Regional Airport (TWF)", lat: 42.4818, lng: -114.4877},
+            {name: "Pullman-Moscow Regional Airport (PUW)", lat: 46.7439, lng: -117.1096},
+            {name: "Lewiston-Nez Perce County Airport (LWS)", lat: 46.3745, lng: -117.0154},
+            {name: "Durango-La Plata County Airport (DRO)", lat: 37.1515, lng: -107.7538},
+            {name: "Aspen-Pitkin County Airport (ASE)", lat: 39.2232, lng: -106.8689},
+            {name: "Vail Eagle County Airport (EGE)", lat: 39.6426, lng: -106.9177},
+            {name: "Hayden Yampa Valley Regional Airport (HDN)", lat: 40.4812, lng: -107.2177},
+            {name: "Gunnison-Crested Butte Regional Airport (GUC)", lat: 38.5339, lng: -106.9331},
+            {name: "Alpena County Regional Airport (APN)", lat: 45.0781, lng: -83.5603},
+            {name: "Pellston Regional Airport (PLN)", lat: 45.5709, lng: -84.7967},
+            {name: "Escanaba Delta County Airport (ESC)", lat: 45.7227, lng: -87.0937},
+            {name: "Sault Ste. Marie Chippewa County International Airport (CIU)", lat: 46.2508, lng: -84.4724},
+            {name: "Houghton County Memorial Airport (CMX)", lat: 47.1684, lng: -88.4891},
+            {name: "Marquette Sawyer Regional Airport (MQT)", lat: 46.3536, lng: -87.3954}
+        ];
+
+        // Create a layer group for markers
+        var markers = L.layerGroup();
+        
+        // Add markers to the map and create list items
+        var airportList = document.getElementById('airportList');
+        airports.forEach(function(airport) {
+            // Create marker
+            var marker = L.marker([airport.lat, airport.lng])
+                .bindPopup(airport.name);
+            markers.addLayer(marker);
+
+            // Create list item
+            var listItem = document.createElement('li');
+            listItem.className = 'airport-item';
+            listItem.textContent = airport.name;
+            
+            // Add click event to list item
+            listItem.addEventListener('click', function() {
+                map.setView([airport.lat, airport.lng], 10);
+                marker.openPopup();
+            });
+            
+            airportList.appendChild(listItem);
+        });
+
+        // Add the markers to the map
+        map.addLayer(markers);
+
+        // Fit bounds to show all markers
+        map.fitBounds(markers.getBounds());
+    </script>
+</body>
+</html> 
